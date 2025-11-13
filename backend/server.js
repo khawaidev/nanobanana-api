@@ -1,3 +1,4 @@
+
 import cors from 'cors';
 import express from 'express';
 
@@ -29,30 +30,24 @@ app.post('/callback', (req, res) => {
     
     const { taskId, code, msg, data } = req.body;
     
-    // Store the result
-    if (taskId) {
-      taskResults.set(taskId, {
-        taskId,
-        code,
-        msg,
-        data,
-        receivedAt: new Date().toISOString()
+    // Extract taskId from various possible locations
+    const extractedTaskId = taskId || data?.taskId || req.body.data?.taskId;
+    
+    if (extractedTaskId) {
+      // Store the entire Banana API response
+      taskResults.set(extractedTaskId, {
+        taskId: extractedTaskId,
+        code: code || req.body.code,
+        msg: msg || req.body.msg,
+        data: data || req.body.data, // Store the full data from Banana API
+        receivedAt: new Date().toISOString(),
+        fullResponse: req.body // Store full response for debugging
       });
       
-      console.log(`Stored result for taskId: ${taskId}`);
+      console.log(`Stored result for taskId: ${extractedTaskId}`);
+      console.log(`Data structure:`, JSON.stringify(data || req.body.data, null, 2));
     } else {
-      // Try to extract taskId from data
-      const extractedTaskId = data?.taskId || req.body.data?.taskId;
-      if (extractedTaskId) {
-        taskResults.set(extractedTaskId, {
-          taskId: extractedTaskId,
-          code,
-          msg,
-          data,
-          receivedAt: new Date().toISOString()
-        });
-        console.log(`Stored result for taskId: ${extractedTaskId}`);
-      }
+      console.warn('No taskId found in callback:', req.body);
     }
     
     // Respond to Banana API (they might expect a 200 response)
@@ -124,7 +119,7 @@ setInterval(() => {
 
 app.listen(PORT, () => {
   console.log(`Banana API Callback Server running on port ${PORT}`);
-  console.log(`Callback URL: https://your-app.onrender.com/callback`);
-  console.log(`Result endpoint: https://your-app.onrender.com/result/:taskId`);
+  console.log(`Callback URL: https://nanobanana-api.onrender.com/callback`);
+  console.log(`Result endpoint: https://nanobanana-api.onrender.com/result/:taskId`);
 });
 
